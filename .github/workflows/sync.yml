@@ -21,6 +21,7 @@ jobs:
       - name: Install Dependencies
         run: |
           npm install
+          cd instagram-scraper-mcp && npm install
           npx playwright install chromium --with-deps
 
       - name: Run Blog Crawler
