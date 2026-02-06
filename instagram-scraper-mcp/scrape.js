@@ -29,10 +29,20 @@ async function scrapePersistent() {
     if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR, { recursive: true });
 
     console.log("Launching browser...");
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.USER === 'ubuntu';
     const context = await chromium.launchPersistentContext(SESSION_DIR, {
-        headless: false,
+        headless: true, // Always true for server stability. Use 'new' if needed.
         viewport: { width: 1280, height: 900 },
-        args: ['--start-maximized']
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-gpu'
+        ]
     });
 
     const page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
