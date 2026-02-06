@@ -144,7 +144,7 @@ app.get('/api/posts', async (req, res) => {
 app.get('/api/script-status', async (req, res) => {
     try {
         const result = await query(
-            "SELECT * FROM script_status WHERE script_name = 'global' LIMIT 1"
+            "SELECT * FROM script_status WHERE id = 1 LIMIT 1"
         );
         res.json(result.rows[0] || { status: 'idle' });
     } catch (e) {
@@ -173,9 +173,9 @@ app.post('/api/run-script', async (req, res) => {
 
     console.log(`[Admin] Executing: ${command}`);
 
-    // Update status in database
+    // Update status in database (Use ID=1 to avoid losing the row)
     await query(
-        "UPDATE script_status SET status = 'running', script_name = $1, start_time = NOW(), output = NULL WHERE script_name = 'global'",
+        "UPDATE script_status SET status = 'running', script_name = $1, start_time = NOW(), output = NULL WHERE id = 1",
         [script]
     );
 
@@ -184,7 +184,7 @@ app.post('/api/run-script', async (req, res) => {
         const output = stdout || stderr || error?.message;
 
         await query(
-            "UPDATE script_status SET status = $1, end_time = NOW(), output = $2 WHERE script_name = 'global'",
+            "UPDATE script_status SET status = $1, script_name = 'global', end_time = NOW(), output = $2 WHERE id = 1",
             [status, output]
         );
 
