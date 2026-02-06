@@ -1,83 +1,89 @@
 import Tesseract from 'tesseract.js';
-import { supabase } from '../lib/supabase-admin.js';
+import pool from '../lib/db.js';
 
-async function runOCRMatching() {
-    console.log("=== Visual OCR Headline Matching (Supabase Edition) ===\n");
+async function runAutoMap() {
+    console.log("=== Auto Map (PostgreSQL Edition) ===\n");
 
-    // 1. Load Articles from Supabase
-    const { data: articles, error: artError } = await supabase.from('blog_articles').select('*');
-    if (artError) {
-        console.error("✗ Could not load articles:", artError.message);
-        return;
-    }
+    try {
+        console.log("Loading data from database...");
 
-    // 2. Load Unmapped Posts from Supabase
-    const { data: posts, error: postError } = await supabase
-        .from('instagram_posts')
-        .select('*')
-        .is('blog_url', null);
+        // 1. Get Articles
+        const articlesRes = await pool.query('SELECT * FROM blog_articles');
+        const articles = articlesRes.rows;
+        console.log(`Loaded ${articles.length} articles.`);
 
-    if (postError) {
-        console.error("✗ Could not load posts:", postError.message);
-        return;
-    }
+        // 2. Get Unmapped Posts
+        const postsRes = await pool.query('SELECT * FROM instagram_posts WHERE blog_url IS NULL');
+        const posts = postsRes.rows;
+        console.log(`Analyzing ${posts.length} unmapped posts for matches...\n`);
 
-    console.log(`Analyzing ${posts.length} unmapped posts for visual headlines...\n`);
+        if (posts.length === 0) {
+            console.log("No unmapped posts found.");
+            return;
+        }
 
-    const stopWords = new Set(['the', 'and', 'with', 'nibs', 'network', 'image', 'photo', 'ready', 'discover', 'unleash']);
+        const stopWords = new Set(['the', 'and', 'with', 'for', 'from', 'best', 'top', 'how']);
 
-    for (const post of posts) {
-        try {
-            console.log(`⌛ Processing ID: ${post.id}...`);
+        for (const post of posts) {
+            console.log(`\nProcessing Post ID: ${post.id}`);
+            let bestMatch = null;
+            let matchType = '';
 
-            // Perform OCR on the image URL directly (Supabase Storage URL)
-            const { data: { text } } = await Tesseract.recognize(post.image, 'eng');
-
-            // Clean up
-            const cleanOCR = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
-            if (cleanOCR.length < 5) continue;
-
-            console.log(`  Visual Text: "${cleanOCR.substring(0, 50)}..."`);
-
-            let bestArticle = null;
-            let highestScore = 0;
-            const ocrWords = cleanOCR.split(' ').filter(w => w.length > 3 && !stopWords.has(w));
+            // --- Strategy 1: Title/Caption Matching (Fast) ---
+            const postText = (post.title || '').toLowerCase().replace(/[^a-z0-9 ]/g, '');
 
             for (const article of articles) {
-                let score = 0;
-                const articleSlug = (article.slug || '').replace(/-/g, ' ');
-                const articleWords = articleSlug.split(' ').filter(w => w.length > 3 && !stopWords.has(w));
-
-                if (cleanOCR.includes(articleSlug)) score += 100;
-
-                const overlap = ocrWords.filter(w => articleWords.includes(w));
-                score += overlap.length * 20;
-
-                if (score > highestScore && score >= 40) {
-                    highestScore = score;
-                    bestArticle = article;
+                const articleTitle = article.title.toLowerCase().replace(/[^a-z0-9 ]/g, '');
+                // Basic contains check (Title must be reasonably unique, e.g. > 10 chars)
+                if (articleTitle.length > 10 && postText.includes(articleTitle)) {
+                    bestMatch = article;
+                    matchType = 'Title Match';
+                    break;
                 }
             }
 
-            if (bestArticle) {
-                const displayTitle = bestArticle.title.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                const { error: upError } = await supabase
-                    .from('instagram_posts')
-                    .update({
-                        blog_url: bestArticle.url,
-                        title: displayTitle
-                    })
-                    .eq('id', post.id);
+            // --- Strategy 2: OCR Matching (Fallback) ---
+            if (!bestMatch && post.image && post.image.startsWith('http')) {
+                try {
+                    process.stdout.write('  Running OCR... ');
+                    const { data: { text } } = await Tesseract.recognize(post.image, 'eng');
+                    const ocrText = text.toLowerCase().replace(/[^a-z0-9 ]/g, '');
+                    console.log(`Done.`);
+                    // console.log(`  OCR Output: "${ocrText.substring(0, 50)}..."`);
 
-                if (!upError) console.log(`  ✅ MATCH: ${displayTitle}`);
+                    for (const article of articles) {
+                        const articleTitle = article.title.toLowerCase().replace(/[^a-z0-9 ]/g, '');
+                        if (articleTitle.length > 10 && ocrText.includes(articleTitle)) {
+                            bestMatch = article;
+                            matchType = 'OCR Match';
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    console.log('  OCR Failed:', e.message);
+                }
             }
 
-        } catch (e) {
-            console.error(`  Error processing ${post.id}:`, e.message);
+            // --- Save Match ---
+            if (bestMatch) {
+                console.log(`  ✅ ${matchType}: Linked to "${bestMatch.title}"`);
+                await pool.query(
+                    'UPDATE instagram_posts SET blog_url = $1 WHERE id = $2',
+                    [bestMatch.url, post.id]
+                );
+            } else {
+                console.log('  - No match found.');
+            }
         }
-    }
 
-    console.log(`\n=== OCR MATCHING COMPLETE ===`);
+        console.log("\n=== Auto Map Complete ===");
+
+    } catch (e) {
+        console.error("Auto Map Critical Error:", e);
+        console.error(e.stack);
+    } finally {
+        pool.end();
+    }
 }
 
-runOCRMatching();
+runAutoMap();
