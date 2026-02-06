@@ -94,6 +94,27 @@ async function crawl() {
         process.exit(1);
     }
 
+    // Ensure table and columns exist
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS blog_articles (
+                id SERIAL PRIMARY KEY,
+                title TEXT NOT NULL,
+                url TEXT UNIQUE NOT NULL,
+                image TEXT,
+                category TEXT,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+            ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS image TEXT;
+            ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS description TEXT;
+            ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS category TEXT;
+        `);
+        console.log('✓ Database Schema Verified');
+    } catch (err) {
+        console.error('Schema migration failed:', err.message);
+    }
+
     const allUrls = await fetchSitemap();
     console.log(`Found ${allUrls.length} potential articles in sitemap.`);
 
