@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { supabase } from './supabase';
+
 import AdminPortal from './AdminPortal';
 import './index.css';
 
@@ -94,12 +94,10 @@ const Home = () => {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        const { data, error } = await supabase
-          .from('instagram_posts')
-          .select('*')
-          .order('timestamp', { ascending: false });
-
-        if (error) throw error;
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${API_URL}/api/posts`);
+        if (!response.ok) throw new Error('Failed to fetch posts');
+        const data = await response.json();
         setPosts(data || []);
       } catch (err) {
         console.error('Error fetching posts:', err);
