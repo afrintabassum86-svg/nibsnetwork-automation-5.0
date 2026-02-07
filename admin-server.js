@@ -187,7 +187,10 @@ app.post('/api/run-script', async (req, res) => {
         case 'auto-map':
             command = 'node instagram-scraper-mcp/ocr_match.js';
             break;
-        default: return res.status(400).json({ error: 'Unknown script. Available: sync-insta, sync-blog, auto-map' });
+        case 'time-sync':
+            command = 'node instagram-scraper-mcp/sync_timestamps.js';
+            break;
+        default: return res.status(400).json({ error: 'Unknown script. Available: sync-insta, sync-blog, auto-map, time-sync' });
     }
 
     console.log(`[Admin] Executing: ${command}`);
