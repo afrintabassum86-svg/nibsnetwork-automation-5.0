@@ -23,32 +23,20 @@ jobs:
           npm install
           cd instagram-scraper-mcp && npm install
 
-      - name: Run Blog Crawler
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node instagram-scraper-mcp/crawl_blog.js
+      - name: Load Production Environment
+        run: |
+          # Copy .env from the deployed app directory to the runner's workspace
+          cp /home/ubuntu/nibsnetwork/.env .env
+          echo "Production .env loaded successfully."
 
-      - name: Run API Fetcher (Instagram Graph API)
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: 1. Run API Fetcher (Instagram Graph API)
         run: node instagram-scraper-mcp/fetch_api.js
 
-      - name: Run OCR Auto-Mapping
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: 2. Run Blog Crawler
+        run: node instagram-scraper-mcp/crawl_blog.js
+
+      - name: 3. Run OCR Auto-Mapping
         run: node instagram-scraper-mcp/ocr_match.js
 
-      - name: Run Timestamp Sync
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: 4. Run Timestamp Sync
         run: node instagram-scraper-mcp/sync_timestamps.js
-
-      - name: Run Full Blog Mapping
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node instagram-scraper-mcp/map_to_blog.js
