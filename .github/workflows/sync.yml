@@ -12,11 +12,17 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: System Check
+        run: |
+          echo "Checking Disk Space..."
+          df -h
+          echo "Checking Node Version..."
+          node -v || echo "Node not found on system path"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install Dependencies
         run: |
