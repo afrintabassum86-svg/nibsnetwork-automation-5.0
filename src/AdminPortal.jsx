@@ -373,6 +373,50 @@ const AdminPortal = () => {
                     </button>
                   </div>
 
+                  <div className="ops-card">
+                    <div className="ops-info">
+                      <h3>2. Sync Blog</h3>
+                      <p>Crawl latest articles from nibsnetwork.com.</p>
+                    </div>
+                    <button
+                      onClick={() => runScript('sync-blog')}
+                      disabled={runningScript}
+                      className="ops-btn"
+                    >
+                      {runningScript === 'sync-blog' ? <Loader2 className="spin" /> : <Play size={16} />}
+                      Crawl Blog
+                    </button>
+                  </div>
+
+                  <div className="ops-card">
+                    <div className="ops-info">
+                      <h3>3. OCR Auto-Map</h3>
+                      <p>Analyze post images and match with blog articles.</p>
+                    </div>
+                    <button
+                      onClick={() => runScript('auto-map')}
+                      disabled={runningScript}
+                      className="ops-btn"
+                    >
+                      {runningScript === 'auto-map' ? <Loader2 className="spin" /> : <Play size={16} />}
+                      Run OCR Match
+                    </button>
+                  </div>
+
+                  <div className="ops-card">
+                    <div className="ops-info">
+                      <h3>4. Time Sync</h3>
+                      <p>Sync correct publish dates from Instagram posts.</p>
+                    </div>
+                    <button
+                      onClick={() => runScript('time-sync')}
+                      disabled={runningScript}
+                      className="ops-btn"
+                    >
+                      {runningScript === 'time-sync' ? <Loader2 className="spin" /> : <Play size={16} />}
+                      Sync Times
+                    </button>
+                  </div>
                 </div>
 
                 <div className="console-output">
