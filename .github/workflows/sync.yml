@@ -9,40 +9,22 @@ jobs:
   sync:
     runs-on: self-hosted
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: System Check
-        run: |
-          echo "Checking Disk Space..."
-          df -h
-          echo "Checking Node Version..."
-          node -v || echo "Node not found on system path"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Dependencies
-        run: |
-          npm install
-          cd instagram-scraper-mcp && npm install
-
-      - name: Load Production Environment
-        run: |
-          # Copy .env from the deployed app directory to the runner's workspace
-          cp /home/ubuntu/nibsnetwork/.env .env
-          echo "Production .env loaded successfully."
-
       - name: 1. Run API Fetcher (Instagram Graph API)
-        run: node instagram-scraper-mcp/fetch_api.js
+        run: |
+          cd /home/ubuntu/nibsnetwork
+          node instagram-scraper-mcp/fetch_api.js
 
       - name: 2. Run Blog Crawler
-        run: node instagram-scraper-mcp/crawl_blog.js
+        run: |
+          cd /home/ubuntu/nibsnetwork
+          node instagram-scraper-mcp/crawl_blog.js
 
       - name: 3. Run OCR Auto-Mapping
-        run: node instagram-scraper-mcp/ocr_match.js
+        run: |
+          cd /home/ubuntu/nibsnetwork
+          node instagram-scraper-mcp/ocr_match.js
 
       - name: 4. Run Timestamp Sync
-        run: node instagram-scraper-mcp/sync_timestamps.js
+        run: |
+          cd /home/ubuntu/nibsnetwork
+          node instagram-scraper-mcp/sync_timestamps.js
