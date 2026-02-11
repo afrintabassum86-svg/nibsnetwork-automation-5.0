@@ -11,20 +11,20 @@ jobs:
     steps:
       - name: 1. Run API Fetcher (Instagram Graph API)
         run: |
-          cd /home/ubuntu/nibsnetwork
+          cd /home/ubuntu/nibsnetwork-automation-5.0
           node instagram-scraper-mcp/fetch_api.js
 
       - name: 2. Run Blog Crawler
         run: |
-          cd /home/ubuntu/nibsnetwork
+          cd /home/ubuntu/nibsnetwork-automation-5.0
           node instagram-scraper-mcp/crawl_blog.js
 
       - name: 3. Run OCR Auto-Mapping
         run: |
-          cd /home/ubuntu/nibsnetwork
+          cd /home/ubuntu/nibsnetwork-automation-5.0
           node instagram-scraper-mcp/ocr_match.js
 
       - name: 4. Run Timestamp Sync
         run: |
-          cd /home/ubuntu/nibsnetwork
+          cd /home/ubuntu/nibsnetwork-automation-5.0
           node instagram-scraper-mcp/sync_timestamps.js
